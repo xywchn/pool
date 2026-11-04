@@ -23,6 +23,7 @@ const outFile = String(arg('out', 'region-ips.txt'));
 const verify = !argv.includes('--no-verify');
 const timeout = Number(arg('timeout', 4000));
 const concurrency = Number(arg('concurrency', 16));
+const regionFilter = String(arg('regions', '')).toUpperCase().split(',').map((s) => s.trim()).filter(Boolean);
 
 const parse = (b64) => {
   let text;
@@ -75,7 +76,7 @@ const main = async () => {
   const rows = parse(await res.text());
   console.log(`      解析到 ${rows.length} 条地区地址`);
 
-  let keep = rows;
+  let keep = regionFilter.length ? rows.filter((e) => regionFilter.includes(e.split('#')[1])) : rows;
   if (verify) {
     console.log(`[2/3] TLS 验证 ${rows.length} 条（并发 ${concurrency}，超时 ${timeout}ms）`);
     const results = await runPool(rows, probe, concurrency);
@@ -97,3 +98,4 @@ const main = async () => {
 };
 
 main().catch((e) => { console.error('失败:', e.message); process.exit(1); });
+

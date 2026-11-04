@@ -25,7 +25,7 @@ jobs:
           node-version: '20'
 
       - name: 抓取 + 存活验证
-        run: node tools/pool-fetcher.mjs --out region-ips.txt --timeout 4000 --concurrency 16
+        run: node tools/pool-fetcher.mjs --out region-ips.txt --regions US,HK,JP,SG,KR,TW --timeout 4000 --concurrency 16
 
       - name: 提交变更
         run: |
@@ -38,3 +38,4 @@ jobs:
             git commit -m "chore(pool): refresh $(date -u +'%Y-%m-%d %H:%M UTC')"
             git push
           fi
+

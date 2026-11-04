@@ -1,0 +1,40 @@
+name: refresh-region-pool
+
+# 每 6 小时抓一次地区反代池，TLS 验证后提交 region-ips.txt
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-pool
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 抓取 + 存活验证
+        run: node tools/pool-fetcher.mjs --out region-ips.txt --timeout 4000 --concurrency 16
+
+      - name: 提交变更
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add region-ips.txt
+          if git diff --staged --quiet; then
+            echo "池子没变化，跳过提交"
+          else
+            git commit -m "chore(pool): refresh $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git push
+          fi
